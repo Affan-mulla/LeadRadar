@@ -1,0 +1,22 @@
+{
+  "name": "leadradar",
+  "version": "1.0.0",
+  "description": "Personal lead intelligence tool — finds buying signals on Reddit and HackerNews",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test:score": "node -e \"const {scorePost}=require('./src/scoring');console.log(JSON.stringify(scorePost({title:'Looking for developer to build automation',body:'We spend hours every week doing this manually, would pay for the right solution'}),null,2))\"",
+    "test:notion": "node -e \"require('./src/storage/notion').testConnection()\"",
+    "test:telegram": "node -e \"require('./src/notifications/telegram').sendMessage('LeadRadar test message ✅')\"",
+    "test:reddit": "node -e \"require('./src/scrapers/reddit').runRedditScraper().then(r=>console.log('Found:',r.length,'posts'))\""
+  },
+  "dependencies": {
+    "@notionhq/client": "2.2.15",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "node-cron": "^3.0.3",
+    "node-telegram-bot-api": "^0.64.0",
+    "playwright": "^1.40.0"
+  }
+}   
