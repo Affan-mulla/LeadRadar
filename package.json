@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
+    "postinstall": "npx playwright install chromium --with-deps",
     "test:score": "node -e \"const {scorePost}=require('./src/scoring');console.log(JSON.stringify(scorePost({title:'Looking for developer to build automation',body:'We spend hours every week doing this manually, would pay for the right solution'}),null,2))\"",
     "test:notion": "node -e \"require('./src/storage/notion').testConnection()\"",
     "test:telegram": "node -e \"require('./src/notifications/telegram').sendMessage('LeadRadar test message ✅')\"",
