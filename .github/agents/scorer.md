@@ -21,7 +21,7 @@ Not all complaints are leads. A post needs to show both:
 
 ### Signal Weights
 ```javascript
-HIGH_INTENT = 4    // someone actively looking to hire or pay
+HIGH_INTENT = 5    // someone actively looking to hire or pay
 MEDIUM_INTENT = 2  // clear pain point, likely to pay
 LOW_INTENT = 1     // general complaint, possible lead
 NEGATIVE = -10     // self-promotion, product launch, solved problem

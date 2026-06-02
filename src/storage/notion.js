@@ -51,22 +51,38 @@ const buildTitle = (value) => {
 const buildNotionProperties = (lead) => {
   const parsedDate = Date.parse(lead.postedAt)
   const postedAt = Number.isNaN(parsedDate) ? null : lead.postedAt
+  const names = config.notion.properties || {}
 
-  const properties = {
-    Name: { title: buildTitle(lead.title || 'Untitled lead') },
-    'Post ID': { rich_text: buildRichText(`${lead.platform}:${lead.postId}`) },
-    Platform: { select: { name: formatPlatform(lead.platform) } },
-    Score: { number: lead.score || 0 },
-    'Signal Strength': { select: { name: formatSignalStrength(lead.score || 0) } },
-    Niches: { multi_select: (lead.niches || []).map((niche) => ({ name: niche })) },
-    Subreddit: { rich_text: buildRichText(lead.subreddit || '') },
-    URL: { url: lead.url || '' },
-    Author: { rich_text: buildRichText(lead.author || '') },
-    Status: { select: { name: '🆕 New' } },
+  const addProperty = (properties, name, value) => {
+    if (!name) {
+      return
+    }
+    properties[name] = value
   }
 
+  const properties = {}
+
+  addProperty(properties, names.name, { title: buildTitle(lead.title || 'Untitled lead') })
+  addProperty(
+    properties,
+    names.postId,
+    { rich_text: buildRichText(`${lead.platform}:${lead.postId}`) }
+  )
+  addProperty(properties, names.platform, { select: { name: formatPlatform(lead.platform) } })
+  addProperty(properties, names.score, { number: lead.score || 0 })
+  addProperty(properties, names.signalStrength, {
+    select: { name: formatSignalStrength(lead.score || 0) },
+  })
+  addProperty(properties, names.niches, {
+    multi_select: (lead.niches || []).map((niche) => ({ name: niche })),
+  })
+  addProperty(properties, names.subreddit, { rich_text: buildRichText(lead.subreddit || '') })
+  addProperty(properties, names.url, { url: lead.url || '' })
+  addProperty(properties, names.author, { rich_text: buildRichText(lead.author || '') })
+  addProperty(properties, names.status, { status: { name: 'New' } })
+
   if (postedAt) {
-    properties['Posted At'] = { date: { start: postedAt } }
+    addProperty(properties, names.postedAt, { date: { start: postedAt } })
   }
 
   return properties

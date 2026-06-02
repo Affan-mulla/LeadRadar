@@ -1,6 +1,7 @@
 // Playwright browser manager (singleton) for all scrapers.
 
 const { chromium } = require('playwright')
+const config = require('../../config')
 
 let browserInstance = null
 
@@ -10,7 +11,7 @@ const getBrowser = async () => {
   }
 
   try {
-    browserInstance = await chromium.launch({ headless: true })
+    browserInstance = await chromium.launch({ headless: config.browser.headless })
     return browserInstance
   } catch (error) {
     console.error('❌ Failed to launch browser:', error.message)

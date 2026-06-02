@@ -1,4 +1,4 @@
-// Reddit scraper using Playwright and old.reddit.com for stable HTML.
+// Reddit scraper using Playwright and JSON listing endpoints.
 
 const config = require('../../config')
 const { getBrowser } = require('../browser')
@@ -48,36 +48,68 @@ const normalizePosts = (rawPosts) => {
     .filter((post) => isWithinMaxAge(post.postedAt))
 }
 
-const fetchListing = async (page, url) => {
-  await page.goto(url, { waitUntil: 'domcontentloaded' })
-  await page.waitForTimeout(randomDelay())
-
-  try {
-    await page.waitForSelector('.thing', { timeout: 10000 })
-  } catch (error) {
-    // If the selector is missing, still attempt to scrape whatever loaded.
+const mapJsonPosts = (children) => {
+  if (!Array.isArray(children)) {
+    return []
   }
 
-  return page.evaluate(() => {
-    const rows = Array.from(document.querySelectorAll('.thing'))
-    return rows.map((row) => {
-      const titleEl = row.querySelector('a.title')
-      const authorEl = row.querySelector('a.author')
-      const timeEl = row.querySelector('time')
-      const bodyEl = row.querySelector('.usertext-body')
-
+  return children
+    .map((child) => child && child.data)
+    .filter(Boolean)
+    .map((data) => {
       return {
-        title: titleEl ? titleEl.textContent.trim() : '',
-        url: titleEl ? titleEl.href : row.getAttribute('data-url') || '',
-        author: authorEl ? authorEl.textContent.trim() : '',
-        postId: row.getAttribute('data-fullname') || '',
-        subreddit: row.getAttribute('data-subreddit') || '',
-        postedAt: timeEl ? timeEl.getAttribute('datetime') : '',
-        body: bodyEl ? bodyEl.textContent.trim() : '',
-        permalink: row.getAttribute('data-permalink') || '',
+        title: data.title || '',
+        url: data.url || '',
+        author: data.author || '',
+        postId: data.name || data.id || '',
+        subreddit: data.subreddit || '',
+        postedAt: data.created_utc ? new Date(data.created_utc * 1000).toISOString() : '',
+        body: data.selftext || '',
+        permalink: data.permalink || '',
       }
     })
-  })
+}
+
+const fetchListingJson = async (context, url) => {
+  try {
+    const response = await context.request.get(url, {
+      headers: {
+        accept: 'application/json,text/plain,*/*',
+      },
+    })
+
+    if (!response.ok()) {
+      console.error('❌ Reddit JSON request failed:', response.status())
+      return []
+    }
+
+    const rawText = await response.text()
+    if (!rawText) {
+      return []
+    }
+
+    const trimmed = rawText.trim()
+    if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+      console.error('❌ Reddit JSON blocked or unexpected response.')
+      return []
+    }
+
+    const parsed = JSON.parse(trimmed)
+    return mapJsonPosts(parsed?.data?.children || [])
+  } catch (error) {
+    console.error('❌ Failed to fetch Reddit JSON:', error.message)
+    return []
+  }
+}
+
+const warmupSubreddit = async (page, subreddit) => {
+  try {
+    const url = `https://www.reddit.com/r/${subreddit}/`
+    await page.goto(url, { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(randomDelay())
+  } catch (error) {
+    console.error(`❌ r/${subreddit} warmup failed:`, error.message)
+  }
 }
 
 const runRedditScraper = async () => {
@@ -95,31 +127,19 @@ const runRedditScraper = async () => {
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
     })
     await context.setExtraHTTPHeaders({
+      accept: 'application/json,text/plain,*/*',
       'accept-language': 'en-US,en;q=0.9',
     })
     page = await context.newPage()
 
     for (const subreddit of config.reddit.subreddits) {
       try {
-        const url = `https://old.reddit.com/r/${subreddit}/new/`
-        const rawPosts = await fetchListing(page, url)
+        await warmupSubreddit(page, subreddit)
+        const url = `https://www.reddit.com/r/${subreddit}/new.json?limit=100&raw_json=1`
+        const rawPosts = await fetchListingJson(context, url)
         results.push(...normalizePosts(rawPosts))
       } catch (error) {
         console.error(`❌ r/${subreddit} failed:`, error.message)
-      }
-    }
-
-    for (const subreddit of config.reddit.subreddits) {
-      for (const query of config.reddit.searchQueries) {
-        try {
-          const url = `https://old.reddit.com/r/${subreddit}/search?q=${encodeURIComponent(
-            query
-          )}&restrict_sr=1&sort=new`
-          const rawPosts = await fetchListing(page, url)
-          results.push(...normalizePosts(rawPosts))
-        } catch (error) {
-          console.error(`❌ r/${subreddit} search failed:`, error.message)
-        }
       }
     }
   } catch (error) {

@@ -60,7 +60,7 @@ const runScan = async () => {
 
 		const scoredPosts = scorePosts(newPosts)
 		const qualified = scoredPosts.filter(
-			(post) => post.score >= config.scanning.minIntentScore
+			(post) => post.isLead && post.score >= config.scanning.minIntentScore
 		)
 
 		await saveLeads(qualified)
