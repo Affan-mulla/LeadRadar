@@ -118,6 +118,11 @@ const saveLeads = async (leads) => {
 
   let saved = 0
   for (const lead of leads) {
+    const score = Number(lead.score) || 0
+    if (!lead.isLead || score < config.scanning.minIntentScore) {
+      console.log(`  ⏭️  Skipped — isLead: ${lead.isLead}, score: ${score}`)
+      continue
+    }
     const ok = await saveLead(client, lead)
     if (ok) {
       saved += 1

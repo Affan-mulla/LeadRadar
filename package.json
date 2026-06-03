@@ -7,12 +7,13 @@
     "start": "node index.js",
     "dev": "node --watch index.js",
     "postinstall": "npx playwright install chromium --with-deps",
-    "test:score": "node -e \"const {scorePost}=require('./src/scoring');console.log(JSON.stringify(scorePost({title:'Looking for developer to build automation',body:'We spend hours every week doing this manually, would pay for the right solution'}),null,2))\"",
+    "test:score": "node -e \"require('dotenv').config(); const {scorePost}=require('./src/scoring'); scorePost({title:'Looking for developer to build automation',body:'We spend hours every week doing this manually, would pay for the right solution'}).then((result)=>console.log(JSON.stringify(result,null,2))).catch(console.error)\"",
     "test:notion": "node -e \"require('./src/storage/notion').testConnection()\"",
     "test:telegram": "node -e \"require('./src/notifications/telegram').sendMessage('LeadRadar test message ✅')\"",
     "test:reddit": "node -e \"require('./src/scrapers/reddit').runRedditScraper().then(r=>console.log('Found:',r.length,'posts'))\""
   },
   "dependencies": {
+    "@google/genai": "^2.7.0",
     "@notionhq/client": "2.2.15",
     "axios": "^1.6.0",
     "dotenv": "^16.3.1",
@@ -20,4 +21,4 @@
     "node-telegram-bot-api": "^0.64.0",
     "playwright": "^1.40.0"
   }
-}   
+}

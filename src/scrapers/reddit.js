@@ -135,7 +135,7 @@ const runRedditScraper = async () => {
     for (const subreddit of config.reddit.subreddits) {
       try {
         await warmupSubreddit(page, subreddit)
-        const url = `https://www.reddit.com/r/${subreddit}/new.json?limit=100&raw_json=1`
+        const url = `https://www.reddit.com/r/${subreddit}/new.json?limit=20&raw_json=1`
         const rawPosts = await fetchListingJson(context, url)
         results.push(...normalizePosts(rawPosts))
       } catch (error) {
